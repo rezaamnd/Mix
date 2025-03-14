@@ -1,25 +1,26 @@
-let colorReferences = JSON.parse(localStorage.getItem("colorReferences")) || [];
+let colorReferences = []; // Tidak menyimpan di localStorage
 
-document.addEventListener("DOMContentLoaded", () => {
-    updateColorReferences();
-});
-
+// Fungsi menambahkan warna acuan
 function addColor() {
     let newColor = document.getElementById("newColor").value;
-    colorReferences.push(hexToRgb(newColor));
-    saveColors();
+    let rgbColor = hexToRgb(newColor);
+    colorReferences.push(rgbColor);
     updateColorReferences();
 }
 
+// Fungsi memperbarui daftar warna acuan di UI
 function updateColorReferences() {
     let container = document.getElementById("colorReferences");
     container.innerHTML = "";
+
     colorReferences.forEach((color, index) => {
         let div = document.createElement("div");
+        div.classList.add("color-box");
         div.style.backgroundColor = `rgb(${color.r}, ${color.g}, ${color.b})`;
-        
+
         let deleteBtn = document.createElement("span");
         deleteBtn.innerHTML = "×";
+        deleteBtn.classList.add("delete-btn");
         deleteBtn.onclick = function() { removeColor(index); };
 
         div.appendChild(deleteBtn);
@@ -27,36 +28,25 @@ function updateColorReferences() {
     });
 }
 
+// Fungsi menghapus warna acuan tertentu
 function removeColor(index) {
     colorReferences.splice(index, 1);
-    saveColors();
     updateColorReferences();
 }
 
-function extractColor(event, isTarget = false) {
-    let file = event.target.files[0];
-    let img = new Image();
-    img.src = URL.createObjectURL(file);
-    img.onload = function() {
-        let canvas = document.createElement("canvas");
-        let ctx = canvas.getContext("2d");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
-
-        let pixelData = ctx.getImageData(img.width / 2, img.height / 2, 1, 1).data;
-        let color = { r: pixelData[0], g: pixelData[1], b: pixelData[2] };
-
-        if (isTarget) {
-            document.getElementById("targetColor").value = rgbToHex(color.r, color.g, color.b);
-        } else {
-            colorReferences.push(color);
-            saveColors();
-            updateColorReferences();
-        }
-    };
+// Fungsi reset semua warna acuan
+function resetColorReferences() {
+    colorReferences = [];
+    updateColorReferences();
 }
 
+// Fungsi reset warna target dan hasil
+function resetTarget() {
+    document.getElementById("targetColor").value = "#ffffff";
+    document.getElementById("result").innerHTML = "";
+}
+
+// Fungsi konversi Hex ke RGB
 function hexToRgb(hex) {
     let bigint = parseInt(hex.slice(1), 16);
     return {
@@ -66,10 +56,12 @@ function hexToRgb(hex) {
     };
 }
 
+// Fungsi konversi RGB ke Hex
 function rgbToHex(r, g, b) {
-    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+    return "#" + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1).toUpperCase();
 }
 
+// Fungsi perhitungan campuran warna berdasarkan kedekatan RGB
 function calculateMix() {
     let targetHex = document.getElementById("targetColor").value;
     let targetColor = hexToRgb(targetHex);
@@ -87,13 +79,8 @@ function calculateMix() {
 
     document.getElementById("result").innerHTML = `<p>Campuran terbaik: ${resultText}</p>`;
 }
-function resetColorReferences() {
-    colorReferences = [];
-    saveColors();
-    updateColorReferences();
-}
 
-
+// Fungsi menghitung proporsi warna berdasarkan jarak Euclidean RGB
 function getMixProportions(target, references) {
     let distances = references.map(ref => {
         return {
@@ -106,7 +93,6 @@ function getMixProportions(target, references) {
         };
     });
 
-    // Inversi jarak agar warna yang lebih dekat mendapatkan bobot lebih besar
     let weights = distances.map(d => 1 / (d.distance + 1));  
     let totalWeight = weights.reduce((a, b) => a + b, 0);
 
@@ -114,4 +100,4 @@ function getMixProportions(target, references) {
         color: d.color,
         percentage: weights[i] / totalWeight
     }));
-      }
+}
