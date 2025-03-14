@@ -87,6 +87,11 @@ function calculateMix() {
 
     document.getElementById("result").innerHTML = `<p>Campuran terbaik: ${resultText}</p>`;
 }
+function resetColorReferences() {
+    colorReferences = [];
+    saveColors();
+    updateColorReferences();
+}
 
 
 function getMixProportions(target, references) {
